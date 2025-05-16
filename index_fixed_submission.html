@@ -1,0 +1,94 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Apply for Criminal Record</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+    input, select {
+      width: 300px;
+      padding: 5px;
+    }
+    #certificateLink {
+      display: none;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Apply for Criminal Record</h2>
+  <form id="recordForm">
+    <label>Full Name:</label>
+    <input type="text" name="fullName" required />
+
+    <label>Passport Number:</label>
+    <input type="text" name="passportNumber" required pattern="K\d{8}" />
+
+    <label>Date of Birth:</label>
+    <input type="date" name="dateOfBirth" required />
+
+    <label>Purpose:</label>
+    <input type="text" name="purpose" required />
+
+    <label>Upload ID Photo:</label>
+    <input type="file" name="idPhoto" accept="image/*" required />
+
+    <label>Amount (USD):</label>
+    <input type="number" name="amount" value="10.00" step="0.01" required />
+
+    <br/><br/>
+    <button type="submit">Submit</button>
+  </form>
+
+  <p id="status"></p>
+  <a id="certificateLink" href="#" download>Download Certificate</a>
+
+  <script>
+    document.getElementById("recordForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const form = e.target;
+      const status = document.getElementById("status");
+      const link = document.getElementById("certificateLink");
+
+      const formData = new FormData(form);
+      const fullName = formData.get("fullName");
+      const passportNumber = formData.get("passportNumber");
+      const dateOfBirth = formData.get("dateOfBirth");
+      const purpose = formData.get("purpose");
+      const amount = formData.get("amount");
+
+      const paymentUrl = `https://sandbox.paymentprovider.com/pay?ref=${fullName}&amount=${amount}`;
+      status.innerHTML = `Payment link generated: <a href="${paymentUrl}" target="_blank">Pay here</a><br/>Processing application...`;
+
+      try {
+        const response = await fetch("https://digital-crime-api-stkitts.onrender.com/generate-certificate?" +
+          new URLSearchParams({ fullName, passportNumber, dateOfBirth, purpose }), {
+          method: "POST",
+        });
+
+        if (!response.ok) throw new Error("Network response was not ok");
+
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        link.href = downloadUrl;
+        link.download = `${passportNumber}_Certificate.pdf`;
+        link.style.display = "inline";
+        status.innerHTML += "<br/>Record processed successfully.";
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Error: Unable to process request. Please try again.";
+        link.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
